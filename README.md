@@ -1,23 +1,20 @@
 # YieldGuard — Autonomous USDT Lending Agent
 
-> An AI agent that monitors Aave V3 positions, deploys idle USDT to maximize yield,
-> protects against liquidation, and — uniquely — uses its own earned yield to
-> autonomously service debt. Built on WDK. Designed to run without human input.
+> An AI agent that monitors Aave V3 positions, deploys idle USDT to maximize yield, protects against liquidation, and uses its own earned yield to autonomously service debt. Built on WDK. Designed to run without human input.
 
 **Track:** Lending Bot · **Hackathon:** Tether Hackathon Galactica WDK Edition 1
 
 ---
 
-## What it does 
-
- YieldGuard is an economic agent:
+## What it does
 
 1. **Deploys idle USDT to Aave V3** — monitors wallet every 15 seconds, calculates net yield vs gas cost, executes only when profitable
 2. **Protects against liquidation** — detects dangerous health factors instantly, proposes emergency repayment with full economic reasoning
 3. **Autonomous yield routing** — earned yield is reinvested or used to repay debt based on current market conditions, zero wallet impact
 4. **Agent credit scoring** — tracks own reliability (0–850 FICO-style), automatically adjusts deployment capacity based on past behavior
 5. **Agent-to-agent lending** — lends idle capital to borrower agents, evaluates credit scores, auto-collects repayment when job completes
-The agent is autonomous. The human stays in control.
+
+> The agent is autonomous. The human stays in control.
 
 ---
 
@@ -27,9 +24,12 @@ Dashboard hosted on GitHub Pages — backend runs locally via ngrok tunnel.
 
 **[View Dashboard →](https://hvs1012.github.io/yieldguard/)**
 
-To connect your own backend:
+To connect the live backend:
 ```
 https://hvs1012.github.io/yieldguard/?backend=https://barometric-knox-unbreaking.ngrok-free.dev
+```
+
+> If the backend appears offline, the ngrok session may have expired. Run locally following setup instructions below.
 
 ---
 
@@ -45,6 +45,10 @@ https://hvs1012.github.io/yieldguard/?backend=https://barometric-knox-unbreaking
 | Agent-to-Agent Lending | Lends idle pool capital to borrower agents, auto-collects repayment |
 | Policy Engine | Hard rules block bad decisions before execution — no overrides |
 | Confirmation Gate | Every write action requires explicit dashboard approval |
+
+---
+
+## Yield Self-Service
 
 ```
 Normal flow:    User wallet USDT → repay debt   (costs user money)
@@ -64,26 +68,22 @@ The agent earns money by supplying. Then uses that money to reduce its own debt.
 ## Economic Formula
 
 ```
-For every candidate action:
+Net Benefit = Expected Yield Gain − Gas Cost
 
-  Net Benefit = Expected Yield Gain − Gas Cost
+Deploy USDT only if:
+  Net Benefit > 0
+  Gas cost < max_gas_pct × amount
+  Reserve buffer remains intact
+  Amount < max_single_tx_usdt
 
-  Deploy USDT only if:
-    Net Benefit > 0
-    Gas cost < max_gas_pct × amount
-    Reserve buffer remains intact
-    Amount < max_single_tx_usdt
+Repay debt if:
+  Health Factor < min_health_factor (1.5)
 
-  Repay debt if:
-    Health Factor < min_health_factor (1.5)
+Self-service debt if:
+  Earned yield ≥ yield_repay_threshold ($0.05)
 
-  Self-service debt if:
-    Earned yield ≥ yield_repay_threshold ($0.05)
-    Debt > 0
-
-  Withdraw if:
-    Health Factor > max_health_factor (3.5)
-    Capital efficiency can be improved
+Withdraw if:
+  Health Factor > max_health_factor (3.5)
 ```
 
 ---
@@ -96,6 +96,7 @@ For every candidate action:
 │                                              │
 │  agent.py        Main loop, 15s interval     │
 │  decision.py     Economic decision engine    │
+│  credit_score.py Behavior-based reputation   │
 │  claude_ai.py    Claude Sonnet reasoning     │
 │  policy.json     Configurable rules          │
 │  actions.json    Immutable audit log         │
@@ -110,29 +111,18 @@ For every candidate action:
 │  POST /withdraw       withdraw collateral   │
 │  GET  /apy            live APY (DefiLlama)  │
 │  POST /confirm        dashboard approval    │
-│  POST /cancel         dashboard rejection   │
-│  AUTO /tick           30s auto-simulation   │
+│  POST /agents/*       A2A lending endpoints │
+│  AUTO tick            30s auto-simulation   │
 └──────────────────┬──────────────────────────┘
                    │ WDK SDK
 ┌──────────────────▼──────────────────────────┐
-│     Aave V3 on Polygon (live) or Amoy        │
+│     Aave V3 on Polygon / Amoy Testnet        │
 │     @tetherto/wdk-wallet-evm                 │
 │     @tetherto/wdk-protocol-lending-aave-evm  │
 └─────────────────────────────────────────────┘
 ```
 
 ---
-
-## Achieved Criterion
-
-| Criterion | What YieldGuard does |
-|-----------|----------------------|
-| **Technical correctness** | Real WDK SDK calls. `AaveProtocolEvm.supply/repay/withdraw/getAccountData`. Quote-before-execute pattern. Stateful simulation preserves state across restarts. |
-| **Agent autonomy** | Runs every 15s without human input. Detects idle funds, danger scenarios, over-collateralization independently. Self-services debt from earned yield automatically. |
-| **Economic soundness** | Net Benefit formula on every decision. Live APY from DefiLlama. Gas cost as % of amount. Break-even calculation. Policy engine blocks negative-EV actions. |
-| **Real-world applicability** | Configurable policy.json. Reserve buffer prevents wallet drain. Human confirmation gate for write operations. Clear simulation→live migration path (one env var). |
-
-
 
 ## Setup
 
@@ -148,12 +138,12 @@ cd ../agent && pip install -r requirements.txt
 ### 2. Configure
 ```bash
 # wdk-server/.env
-SIMULATE=true                    # false for live Polygon Amoy
-SEED_PHRASE=your twelve words    # only needed when SIMULATE=false
+SIMULATE=true                     # false for live Polygon Amoy
+SEED_PHRASE=your twelve words     # only needed when SIMULATE=false
 RPC_URL=https://rpc-amoy.polygon.technology
 
 # .env.agent (optional)
-ANTHROPIC_API_KEY=sk-ant-...     # enables Claude AI reasoning
+ANTHROPIC_API_KEY=sk-ant-...      # enables Claude AI reasoning
 ```
 
 ### 3. Run
@@ -167,13 +157,12 @@ cd agent && python agent.py
 # Dashboard: open dashboard/index.html in browser
 ```
 
-### 4. For GitHub Pages (remote dashboard)
-
-**[Live Dashboard →](https://hvs1012.github.io/yieldguard/?backend=https://barometric-knox-unbreaking.ngrok-free.dev)**
-
-> Dashboard hosted on GitHub Pages. Backend runs locally via ngrok tunnel.
-> If the backend appears offline, the ngrok session may have expired.
-> Contact for a fresh link or run locally following setup instructions given in 3rd point.
+### 4. Remote dashboard via ngrok
+```bash
+ngrok http 3000
+# Copy the https URL, then open:
+# https://hvs1012.github.io/yieldguard/?backend=https://https://barometric-knox-unbreaking.ngrok-free.dev
+```
 
 ---
 
@@ -200,17 +189,30 @@ cd agent && python agent.py
 
 **Scenario 3 — Policy block:** Set `max_single_tx_usdt: 10` → reset → agent proposes 450 USDT → ⛔ BLOCKED automatically
 
-**Scenario 4 — Yield self-service:** Let simulation run → wait for `totalEarned > $0.05` → agent autonomously repays debt from earned yield, wallet untouched
+**Scenario 4 — Yield self-service:** Let simulation run → wait for `totalEarned > $0.05` → agent autonomously routes yield to repay debt or compound
+
+**Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s
+
+---
+
+## Tech Stack
+
+- **Wallet:** Tether WDK (`wdk-wallet-evm`, `wdk-protocol-lending-aave-evm`)
+- **Protocol:** Aave V3 on Polygon
+- **Agent:** Python 3 — decision engine, credit score, policy rules
+- **Server:** Node.js + Express — WDK wrapper
+- **Dashboard:** Vanilla HTML/JS — live updates every 5s
+- **APY data:** DefiLlama API (live market rates)
 
 ---
 
 ## Prior Art & Inspiration
 
-- **DeFi Saver** — production health factor automation on Aave
-- **Yearn Finance** — automated yield optimization vaults
-- **Instadapp** — programmable DeFi accounts with automation
-- Autonomous Agents on Blockchains (arxiv.org/abs/2412.02882)
-- SoK: Security and Privacy of AI Agents for Blockchain
+- [DeFi Saver](https://defisaver.com) — production health factor automation on Aave
+- [Yearn Finance](https://yearn.finance) — automated yield optimization vaults
+- [Instadapp](https://instadapp.io) — programmable DeFi accounts with automation
+- [Autonomous Agents on Blockchains](https://arxiv.org/abs/2412.02882)
+- [SoK: Security and Privacy of AI Agents for Blockchain](https://arxiv.org/abs/2406.12775)
 
 ---
 
