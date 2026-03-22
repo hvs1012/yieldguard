@@ -10,7 +10,7 @@
 
 1. **Deploys idle USDT to Aave V3** — monitors wallet every 15 seconds, calculates net yield vs gas cost, executes only when profitable
 2. **Protects against liquidation** — detects dangerous health factors instantly, proposes emergency repayment with full economic reasoning
-3. **Autonomous yield routing** — earned yield is reinvested or used to repay debt based on current market conditions, zero wallet impact
+3. **Autonomous yield routing** — Yield-aware debt service, earned yield is reinvested or used to repay debt based on current market conditions, zero wallet impact
 4. **Agent credit scoring** — tracks own reliability (0–850 FICO-style), automatically adjusts deployment capacity based on past behavior
 5. **Agent-to-agent lending** — lends idle capital to borrower agents, evaluates credit scores, auto-collects repayment when job completes
 
@@ -161,7 +161,7 @@ cd agent && python agent.py
 ```bash
 ngrok http 3000
 # Copy the https URL, then open:
-# https://hvs1012.github.io/yieldguard/?backend=https://https://barometric-knox-unbreaking.ngrok-free.dev
+# https://hvs1012.github.io/yieldguard/?backend=https://barometric-knox-unbreaking.ngrok-free.dev
 ```
 
 ---
@@ -192,9 +192,12 @@ ngrok http 3000
 **Scenario 4 — Yield self-service:** Let simulation run → wait for `totalEarned > $0.05` → agent autonomously routes yield to repay debt or compound
 
 **Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s.
----
+
 Note: A2A lending runs on simulation layer. Core supply/repay/withdraw use real WDK calls.
+
+---
 ## Tech Stack
+
 
 - **Wallet:** Tether WDK (`wdk-wallet-evm`, `wdk-protocol-lending-aave-evm`)
 - **Protocol:** Aave V3 on Polygon
