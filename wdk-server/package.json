@@ -1,0 +1,19 @@
+{
+  "name": "yieldguard-wdk-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "sim": "SIMULATE=true node server.js",
+    "live": "SIMULATE=false node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0"
+  },
+  "optionalDependencies": {
+    "@tetherto/wdk-wallet-evm": "latest",
+    "@tetherto/wdk-protocol-lending-aave-evm": "latest"
+  }
+}

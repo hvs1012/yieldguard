@@ -1,0 +1,80 @@
+{
+  "score": 692,
+  "band": "GOOD",
+  "color": "#38bdf8",
+  "trend": "IMPROVING",
+  "breakdown": {
+    "supply": 3,
+    "hold": 21,
+    "repay": 1
+  },
+  "adjustments": {
+    "deployable_multiplier": 1.0,
+    "reserve_multiplier": 1.0,
+    "mode": "NORMAL",
+    "description": "Good track record \u2014 standard operation"
+  },
+  "history": [
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 570,
+      "timestamp": "2026-03-22T10:51:12"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 572,
+      "timestamp": "2026-03-22T10:51:27"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 574,
+      "timestamp": "2026-03-22T10:51:43"
+    },
+    {
+      "action": "supply",
+      "weight": 40,
+      "score": 614,
+      "timestamp": "2026-03-22T10:53:16"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 616,
+      "timestamp": "2026-03-22T10:53:31"
+    },
+    {
+      "action": "supply",
+      "weight": 40,
+      "score": 656,
+      "timestamp": "2026-03-22T10:54:39"
+    },
+    {
+      "action": "repay",
+      "weight": 30,
+      "score": 686,
+      "timestamp": "2026-03-22T10:55:01"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 688,
+      "timestamp": "2026-03-22T10:55:16"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 690,
+      "timestamp": "2026-03-22T10:55:31"
+    },
+    {
+      "action": "hold",
+      "weight": 2,
+      "score": 692,
+      "timestamp": "2026-03-22T10:55:47"
+    }
+  ],
+  "total_actions": 25
+}

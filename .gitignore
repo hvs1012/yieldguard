@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.json.bak
+__pycache__/
+*.pyc
+agent/actions.json
+agent/pending_action.json

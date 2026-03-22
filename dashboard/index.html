@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YieldGuard — AI Lending Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 24px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid #2d3748; }
+  .logo { font-size: 22px; font-weight: 700; color: #fff; }
+  .logo span { color: #38bdf8; }
+  .status-pill { display: flex; align-items: center; gap: 8px; background: #1a2332; border: 1px solid #2d3748; border-radius: 20px; padding: 6px 14px; font-size: 13px; color: #94a3b8; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+  .dot.off { background: #ef4444; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card { background: #1a2332; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px; font-weight: 600; }
+  .stat-value { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+  .stat-value.green  { color: #22c55e; }
+  .stat-value.red    { color: #ef4444; }
+  .stat-value.yellow { color: #f59e0b; }
+  .stat-value.blue   { color: #38bdf8; }
+  .stat-value.purple { color: #a78bfa; }
+  .stat-sub { font-size: 12px; color: #64748b; margin-top: 6px; }
+  .hf-bar-bg { height: 6px; background: #2d3748; border-radius: 3px; margin: 12px 0 6px; }
+  .hf-bar { height: 6px; border-radius: 3px; transition: width 0.8s, background 0.8s; }
+  .hf-labels { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }
+  .conf-card { border: 1px solid #2d3748; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .conf-header { padding: 14px 20px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+  .conf-header.ok      { background: #052e16; border-bottom: 1px solid #166534; color: #4ade80; }
+  .conf-header.caution { background: #2d1d0a; border-bottom: 1px solid #92400e; color: #fbbf24; }
+  .conf-header.blocked { background: #2d0808; border-bottom: 1px solid #991b1b; color: #f87171; }
+  .conf-header.alert   { background: #2d0808; border-bottom: 1px solid #991b1b; color: #f87171; }
+  .conf-body { padding: 16px 20px; background: #1a2332; }
+  .conf-point { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2d3748; font-size: 13px; line-height: 1.5; }
+  .conf-point:last-child { border-bottom: none; }
+  .conf-num { width: 22px; height: 22px; border-radius: 50%; background: #2d3748; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .log-table th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; border-bottom: 1px solid #2d3748; }
+  .log-table td { padding: 10px 12px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+  .log-table tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.supply   { background: #052e16; color: #4ade80; }
+  .badge.repay    { background: #0c1a2e; color: #38bdf8; }
+  .badge.withdraw { background: #2d1d0a; color: #fbbf24; }
+  .badge.hold     { background: #1e293b; color: #64748b; }
+  .badge.blocked  { background: #2d0808; color: #f87171; }
+  .badge.alert    { background: #2d0808; color: #f87171; }
+  .badge.cancelled{ background: #1e293b; color: #94a3b8; }
+  .reason-text { font-size: 13px; line-height: 1.6; color: #94a3b8; background: #111827; border-radius: 8px; padding: 12px 14px; border-left: 3px solid #38bdf8; }
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .metric-item { background: #111827; border-radius: 6px; padding: 8px 10px; }
+  .metric-label { font-size: 10px; color: #64748b; text-transform: uppercase; }
+  .metric-val { font-size: 15px; font-weight: 600; color: #e2e8f0; margin-top: 2px; }
+  .wallet-addr { font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px; word-break: break-all; }
+  .loading { color: #4b5563; font-size: 14px; text-align: center; padding: 40px; }
+  .last-updated { font-size: 11px; color: #4b5563; text-align: right; margin-top: 8px; }
+  .demo-btn { background: #1e3a5f; border: 1px solid #2563eb; color: #60a5fa; border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+  .demo-btn:hover { background: #2563eb; color: #fff; }
+  .demo-btn.danger { background: #2d0808; border-color: #991b1b; color: #f87171; }
+  .demo-btn.danger:hover { background: #991b1b; color: #fff; }
+  .demo-btn.green { background: #052e16; border-color: #166534; color: #4ade80; }
+  .demo-btn.green:hover { background: #166534; color: #fff; }
+  .apy-bar-bg { height: 4px; background: #2d3748; border-radius: 2px; margin-top: 8px; }
+  .apy-bar { height: 4px; border-radius: 2px; background: #22c55e; transition: width 1s; }
+  /* pulse animation for new deposits */
+  @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .pulse { animation: pulse-green 1s ease-in-out 3; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Yield<span>Guard</span> <span style="font-size:14px;color:#4b5563;font-weight:400">AI Lending Agent</span></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="sim-badge" style="display:none;background:#1e3a5f;color:#38bdf8;font-size:11px;padding:4px 10px;border-radius:6px;font-weight:600">🧪 SIMULATION</span>
+    <div class="status-pill">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-status">Connecting...</span>
+    </div>
+  </div>
+</header>
+
+<!-- ngrok setup banner — shown when backend is not localhost -->
+<div id="ngrok-banner" style="display:none;background:#1e3a5f;border:1px solid #2563eb;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#93c5fd">
+  <strong style="color:#60a5fa">🌐 Remote mode</strong> — Connected to backend: <span id="backend-url-display"></span>
+  <span style="float:right;color:#4b5563;font-size:11px">Simulation running on agent's machine</span>
+</div>
+
+<!-- Row 1: 4 key metrics -->
+<div class="grid-4">
+  <div class="card">
+    <div class="card-title">USDT Balance (Wallet)</div>
+    <div class="stat-value green" id="usdt-balance">—</div>
+    <div class="stat-sub">Available to deploy</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Aave Collateral</div>
+    <div class="stat-value blue" id="aave-collateral">—</div>
+    <div class="stat-sub">Earning yield on Aave V3</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Live APY <span id="apy-source" style="font-size:10px;color:#4b5563"></span></div>
+    <div class="stat-value green" id="live-apy">—</div>
+    <div class="apy-bar-bg"><div class="apy-bar" id="apy-bar" style="width:0%"></div></div>
+    <div class="stat-sub">Annual yield on supplied USDT</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Total Yield Earned</div>
+    <div class="stat-value purple" id="total-earned">$0.000000</div>
+    <div class="stat-sub">Accruing every 30 seconds</div>
+  </div>
+</div>
+
+<!-- Row 1b: Credit score + session summary -->
+<div class="grid-2" style="margin-bottom:16px">
+  <div class="card">
+    <div class="card-title">Agent Credit Score</div>
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <div class="stat-value" id="credit-score" style="font-size:36px">500</div>
+      <div>
+        <div id="credit-band" style="font-size:13px;font-weight:600;color:#38bdf8">GOOD</div>
+        <div id="credit-trend" style="font-size:11px;color:#64748b">STABLE</div>
+      </div>
+    </div>
+    <div style="margin:10px 0 6px;height:6px;background:#2d3748;border-radius:3px">
+      <div id="credit-bar" style="height:6px;border-radius:3px;background:#38bdf8;width:59%;transition:width 1s,background 1s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#4b5563">
+      <span>0 CRITICAL</span><span>400 FAIR</span><span>600 GOOD</span><span>750 EXCELLENT</span>
+    </div>
+    <div id="credit-mode" style="margin-top:10px;font-size:12px;color:#94a3b8;background:#111827;border-radius:6px;padding:8px 10px;border-left:3px solid #38bdf8"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Session Summary</div>
+    <div class="metrics-grid">
+      <div class="metric-item"><div class="metric-label">Total deployed</div><div class="metric-val" id="sum-deployed">$0</div></div>
+      <div class="metric-item"><div class="metric-label">Yield earned</div><div class="metric-val" id="sum-earned">$0.000000</div></div>
+      <div class="metric-item"><div class="metric-label">Decisions made</div><div class="metric-val" id="sum-decisions">0</div></div>
+      <div class="metric-item"><div class="metric-label">Policy blocks</div><div class="metric-val" id="sum-blocks">0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Health factor + wallet info -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Health Factor</div>
+    <div id="hf-value" class="stat-value">—</div>
+    <div class="hf-bar-bg"><div class="hf-bar" id="hf-bar" style="width:0%"></div></div>
+    <div class="hf-labels"><span>1.0 danger</span><span>1.5 min</span><span>3.5 max</span><span>5.0+</span></div>
+    <div class="stat-sub" id="hf-status" style="margin-top:8px">—</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Wallet Address</div>
+    <div class="wallet-addr" id="wallet-addr">—</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+      <div>
+        <div class="card-title">Aave Debt</div>
+        <div class="stat-value" id="aave-debt" style="font-size:20px">—</div>
+      </div>
+      <div>
+        <div class="card-title">POL Balance</div>
+        <div class="stat-value" id="pol-balance" style="font-size:20px">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Agent panel -->
+<div id="agent-panel"><div class="loading">Waiting for agent decision...</div></div>
+
+<!-- Row 4: Demo controls (visible in simulation mode) -->
+<div id="demo-controls" style="display:none;margin-bottom:16px">
+  <div class="card">
+    <div class="card-title">Demo Controls — Simulation Mode</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+      <button class="demo-btn green" onclick="doDeposit(100)">+ Deposit 100 USDT</button>
+      <button class="demo-btn green" onclick="doDeposit(300)">+ Deposit 300 USDT</button>
+      <button class="demo-btn danger" onclick="setHealth(1.2)">⚠️ Set HF to 1.2 (Danger)</button>
+      <button class="demo-btn danger" onclick="setHealth(1.4)">Set HF to 1.4 (Warning)</button>
+      <button class="demo-btn" onclick="forceTick()">⚡ Force Tick</button>
+      <button class="demo-btn" onclick="doReset()" style="border-color:#4b5563;color:#94a3b8">↺ Reset</button>
+    </div>
+    <div id="ctrl-msg" style="font-size:12px;color:#64748b;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- Row 4b: Agent-to-Agent Lending -->
+<div id="a2a-section" style="display:none;margin-bottom:16px">
+  <div class="card">
+    <div class="card-title">Agent-to-Agent Lending <span style="background:#1e3a5f;color:#38bdf8;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:6px;font-weight:600">BONUS FEATURE</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <!-- Lender Agent -->
+      <div style="background:#111827;border-radius:10px;padding:14px;border:1px solid #166534">
+        <div style="font-size:11px;text-transform:uppercase;color:#4ade80;font-weight:600;margin-bottom:10px">🏦 Agent A — Lender (YieldGuard)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="metric-item"><div class="metric-label">Lending Pool</div><div class="metric-val" id="a2a-pool">$0</div></div>
+          <div class="metric-item"><div class="metric-label">Total Loaned</div><div class="metric-val" id="a2a-loaned">$0</div></div>
+          <div class="metric-item"><div class="metric-label">Total Repaid</div><div class="metric-val" id="a2a-repaid">$0</div></div>
+          <div class="metric-item"><div class="metric-label">Active Loans</div><div class="metric-val" id="a2a-active">0</div></div>
+        </div>
+      </div>
+      <!-- Borrower Agent -->
+      <div style="background:#111827;border-radius:10px;padding:14px;border:1px solid #1e3a5f">
+        <div style="font-size:11px;text-transform:uppercase;color:#38bdf8;font-weight:600;margin-bottom:10px">🤖 Agent B — Borrower (AGENT-B-001)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="metric-item"><div class="metric-label">USDT Balance</div><div class="metric-val" id="b-balance">$0</div></div>
+          <div class="metric-item"><div class="metric-label">Credit Score</div><div class="metric-val" id="b-credit">620</div></div>
+        </div>
+        <div id="b-job" style="margin-top:8px;font-size:12px;color:#64748b">No active job</div>
+      </div>
+    </div>
+    <!-- Loan history -->
+    <div id="a2a-loans" style="font-size:13px;color:#64748b">No loans yet — fund pool and request a loan</div>
+    <!-- Controls -->
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="demo-btn green" onclick="a2aFundPool()">💰 Fund Lending Pool (50 USDT)</button>
+      <button class="demo-btn" onclick="a2aRequestLoan()">🤖 Agent B Requests Loan</button>
+    </div>
+    <div id="a2a-msg" style="font-size:12px;color:#64748b;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- Row 5: Action log -->
+<div class="card">
+  <div class="card-title">Action History <span id="action-count" style="color:#38bdf8;margin-left:6px"></span></div>
+  <div id="action-log"><div class="loading">No actions yet.</div></div>
+  <div class="last-updated" id="last-updated"></div>
+</div>
+
+<script>
+// Backend URL: use ?backend=https://xxxx.ngrok.io for GitHub Pages deployment
+// Default: http://localhost:3000 for local development
+const params = new URLSearchParams(window.location.search)
+const WDK = params.get('backend') || 'http://localhost:3000'
+let prevUsdt = null
+
+async function fetchJSON(url) {
+  try { return await (await fetch(url)).json() } catch { return null }
+}
+
+async function postJSON(url, body={}) {
+  try { return await (await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json() } catch { return null }
+}
+
+// ── Position ──────────────────────────────────────────────────────────────────
+async function updatePosition() {
+  const pos = await fetchJSON(`${WDK}/position`)
+  const dot = document.getElementById('server-dot')
+  if (!pos || pos.error) { dot.className='dot off'; document.getElementById('server-status').textContent='WDK server offline'; return }
+  dot.className = 'dot'
+  document.getElementById('server-status').textContent = pos.simulated ? 'Connected · Simulation' : 'Connected · Polygon Amoy'
+
+  // Show ngrok banner if using remote backend
+  const banner = document.getElementById('ngrok-banner')
+  const urlDisplay = document.getElementById('backend-url-display')
+  if (WDK !== 'http://localhost:3000' && banner) {
+    banner.style.display = 'block'
+    if (urlDisplay) urlDisplay.textContent = WDK
+  }
+  document.getElementById('sim-badge').style.display   = pos.simulated ? 'inline' : 'none'
+  document.getElementById('demo-controls').style.display = pos.simulated ? 'block' : 'none'
+
+  // Pulse USDT if it increased (salary deposit happened)
+  const usdtEl = document.getElementById('usdt-balance')
+  if (prevUsdt !== null && pos.usdtBalance > prevUsdt + 1) {
+    usdtEl.classList.remove('pulse')
+    void usdtEl.offsetWidth
+    usdtEl.classList.add('pulse')
+  }
+  prevUsdt = pos.usdtBalance
+
+  usdtEl.textContent = pos.usdtBalance.toFixed(2) + ' USDT'
+  document.getElementById('aave-collateral').textContent = '$' + pos.aave?.totalCollateral?.toFixed(4)
+  document.getElementById('aave-debt').textContent       = '$' + (pos.aave?.totalDebt || 0).toFixed(2)
+  document.getElementById('pol-balance').textContent     = (pos.polBalance || 0).toFixed(4) + ' POL'
+  document.getElementById('wallet-addr').textContent     = pos.address || '—'
+  document.getElementById('total-earned').textContent    = '$' + (pos.totalEarned || 0).toFixed(6)
+
+  // APY
+  const apyData = await fetchJSON(`${WDK}/apy`)
+  if (apyData) {
+    document.getElementById('live-apy').textContent  = apyData.apy?.toFixed(2) + '%'
+    document.getElementById('apy-bar').style.width   = Math.min(apyData.apy * 8, 100) + '%'
+    document.getElementById('apy-source').textContent = apyData.source === 'simulated' ? '[sim]' : '[DefiLlama]'
+  }
+
+  // Health factor
+  const hf = pos.aave?.healthFactor
+  const hfEl = document.getElementById('hf-value')
+  const barEl = document.getElementById('hf-bar')
+  const stEl  = document.getElementById('hf-status')
+  if (hf === null || hf === undefined) {
+    hfEl.textContent = 'N/A'; hfEl.className = 'stat-value'
+    barEl.style.width = '0%'; stEl.textContent = 'No borrow position — health factor does not apply'
+  } else {
+    hfEl.textContent = hf.toFixed(2)
+    barEl.style.width = Math.min((hf/5)*100, 100) + '%'
+    if (hf < 1.2)      { hfEl.className='stat-value red';    barEl.style.background='#ef4444'; stEl.textContent='🚨 DANGER — liquidation imminent' }
+    else if (hf < 1.5) { hfEl.className='stat-value yellow'; barEl.style.background='#f59e0b'; stEl.textContent='⚠️  Below minimum — repay recommended' }
+    else if (hf < 3.5) { hfEl.className='stat-value green';  barEl.style.background='#22c55e'; stEl.textContent='✅ Healthy — position is safe' }
+    else               { hfEl.className='stat-value blue';   barEl.style.background='#38bdf8'; stEl.textContent='ℹ️  Over-collateralized — withdrawal may improve yield' }
+  }
+}
+
+// ── Confirmation card ─────────────────────────────────────────────────────────
+async function updatePending() {
+  const p = await fetchJSON(`${WDK}/pending`)
+  const panel = document.getElementById('agent-panel')
+  if (!p || p.action === 'none') {
+    panel.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="card-title">Agent Status</div><div class="reason-text">Monitoring... no action needed.</div></div>`
+    return
+  }
+  if (p.action === 'hold') {
+    panel.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="card-title">Agent Status — HOLD</div><div class="reason-text">${p.reason || ''}</div></div>`
+    return
+  }
+  if (p.action === 'alert') {
+    panel.innerHTML = `<div class="conf-card" style="margin-bottom:16px"><div class="conf-header alert">🚨 CRITICAL ALERT — Insufficient Funds to Repay</div><div class="conf-body"><div class="reason-text" style="border-left-color:#ef4444">${p.reason}</div></div></div>`
+    return
+  }
+  const d = p.decision || {}; const card = p.card || {}; const econ = card.economics || {}
+  const status = card.status || 'ok'
+  const headerText = status==='blocked' ? '⛔ EXECUTION BLOCKED — Policy Violation' : status==='caution' ? '⚠️  ACTION PROPOSED — Review Carefully' : '✅  ACTION PROPOSED — Policy Compliant'
+  const pts = (card.points||[]).map((pt,i) => `<div class="conf-point"><div class="conf-num">${i+1}</div><div>${pt.text}</div></div>`).join('')
+  const isAwaiting = p.awaiting_confirmation === true && p.confirmed === null
+
+  // Confirm/Cancel buttons — only shown when agent is waiting for response
+  const actionButtons = isAwaiting ? `
+    <div style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid #2d3748">
+      <button onclick="confirmAction()" style="flex:1;background:#166534;border:1px solid #22c55e;color:#4ade80;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#166534'">
+        ✅ Confirm — Execute Transaction
+      </button>
+      <button onclick="cancelAction()" style="flex:1;background:#2d0808;border:1px solid #991b1b;color:#f87171;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#7f1d1d'" onmouseout="this.style.background='#2d0808'">
+        ❌ Cancel
+      </button>
+    </div>` : (p.confirmed === true ? `
+    <div style="margin-top:16px;padding:12px;background:#052e16;border:1px solid #166534;border-radius:8px;color:#4ade80;font-size:13px;font-weight:600">
+      ✅ Transaction executed — Tx: ${p.tx_hash ? p.tx_hash.slice(0,18)+'...' : 'confirmed'}
+    </div>` : '')
+
+  panel.innerHTML = `
+    <div class="conf-card" style="margin-bottom:16px">
+      <div class="conf-header ${status}">${isAwaiting ? '🔔 AWAITING YOUR CONFIRMATION' : headerText}</div>
+      <div class="conf-body">
+        <div style="font-size:15px;font-weight:600;margin-bottom:14px;color:#e2e8f0">${(d.action||'').toUpperCase()} ${typeof d.amount==='number'?d.amount.toFixed(2):'—'} USDT</div>
+        ${pts}
+        <div class="metrics-grid" style="margin-top:14px">
+          <div class="metric-item"><div class="metric-label">Gas fee</div><div class="metric-val">$${econ.fee_usd?.toFixed(6)||'—'}</div></div>
+          <div class="metric-item"><div class="metric-label">Daily yield</div><div class="metric-val">$${econ.daily_yield_usd?.toFixed(6)||'—'}</div></div>
+          <div class="metric-item"><div class="metric-label">7-day net gain</div><div class="metric-val">$${econ.net_7day_usd?.toFixed(6)||'—'}</div></div>
+          <div class="metric-item"><div class="metric-label">Break-even</div><div class="metric-val">${econ.breakeven_days||'—'} days</div></div>
+        </div>
+        <div class="reason-text" style="margin-top:14px;font-size:12px">${d.reason||''}</div>
+        ${p.claude_analysis ? `
+        <div style="margin-top:14px;padding:12px 14px;background:#0f172a;border-radius:8px;border-left:3px solid #a78bfa">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#7c3aed;font-weight:600;margin-bottom:6px">🧠 Claude AI Market Analysis</div>
+          <div style="font-size:13px;line-height:1.6;color:#c4b5fd">${p.claude_analysis}</div>
+        </div>` : ''}
+        ${actionButtons}
+      </div>
+    </div>`
+}
+
+// ── Action log ────────────────────────────────────────────────────────────────
+async function updateLog() {
+  const log = await fetchJSON(`${WDK}/actions`)
+  const el  = document.getElementById('action-log')
+  const cnt = document.getElementById('action-count')
+  if (!log || !log.length) { el.innerHTML='<div class="loading">No actions yet.</div>'; return }
+  if (cnt) cnt.textContent = `(${log.length} total)`
+  const rows = [...log].reverse().slice(0,25).map(e => {
+    const ts  = new Date(e.timestamp).toLocaleTimeString()
+    const act = e.action||'—'
+    const amt = e.amount ? e.amount.toFixed(2)+' USDT' : '—'
+    const hash = e.tx_hash ? `<a href="https://amoy.polygonscan.com/tx/${e.tx_hash}" target="_blank" style="color:#38bdf8;font-size:11px">${e.tx_hash.slice(0,10)}...</a>` : '—'
+    const reason = (e.reason||'').slice(0,80) + ((e.reason||'').length>80?'...':'')
+    return `<tr><td style="color:#64748b;font-size:12px">${ts}</td><td><span class="badge ${act}">${act}</span></td><td>${amt}</td><td>${hash}</td><td style="color:#64748b;font-size:12px">${reason}</td></tr>`
+  }).join('')
+  el.innerHTML = `<table class="log-table"><thead><tr><th>Time</th><th>Action</th><th>Amount</th><th>Tx Hash</th><th>Reason</th></tr></thead><tbody>${rows}</tbody></table>`
+}
+
+// ── Demo control buttons ──────────────────────────────────────────────────────
+async function doDeposit(amount) {
+  const r = await postJSON(`${WDK}/simulate/deposit`, { amount })
+  msg(`Deposited ${amount} USDT → wallet now ${r?.newBalance?.toFixed(2)} USDT`)
+}
+async function setHealth(hf) {
+  await postJSON(`${WDK}/simulate/set-health`, { healthFactor: hf })
+  msg(`Health factor set to ${hf} — agent will react on next cycle`)
+}
+async function forceTick() {
+  const r = await postJSON(`${WDK}/simulate/tick`)
+  msg(`Tick ran — APY: ${r?.state?.currentApy?.toFixed(2)}% | USDT: ${r?.state?.usdtBalance?.toFixed(2)}`)
+}
+async function doReset() {
+  await postJSON(`${WDK}/simulate/reset`)
+  msg('Simulation reset to 500 USDT starting state')
+}
+function msg(text) {
+  const el = document.getElementById('ctrl-msg')
+  if (el) { el.textContent = '✓ ' + text; setTimeout(() => el.textContent='', 4000) }
+}
+
+// ── Credit score ──────────────────────────────────────────────────────────────
+async function updateCredit() {
+  const cr = await fetchJSON(`${WDK}/credit`)
+  if (!cr) return
+
+  const scoreEl = document.getElementById('credit-score')
+  const bandEl  = document.getElementById('credit-band')
+  const trendEl = document.getElementById('credit-trend')
+  const barEl   = document.getElementById('credit-bar')
+  const modeEl  = document.getElementById('credit-mode')
+
+  if (scoreEl) scoreEl.textContent = cr.score
+  if (bandEl)  { bandEl.textContent = cr.band; bandEl.style.color = cr.color }
+  if (trendEl) {
+    const arrow = cr.trend === 'IMPROVING' ? '↑' : cr.trend === 'DECLINING' ? '↓' : '→'
+    trendEl.textContent = arrow + ' ' + cr.trend
+    trendEl.style.color = cr.trend === 'IMPROVING' ? '#22c55e' : cr.trend === 'DECLINING' ? '#ef4444' : '#64748b'
+  }
+  if (barEl) { barEl.style.width = (cr.score / 850 * 100) + '%'; barEl.style.background = cr.color }
+  if (modeEl) modeEl.textContent = cr.adjustments?.description || 'Standard operation'
+
+  // Session summary from actions
+  const log = await fetchJSON(`${WDK}/actions`)
+  if (log) {
+    const deployed = log.filter(e => e.action === 'supply').reduce((s,e) => s + (e.amount||0), 0)
+    const blocks   = log.filter(e => e.action === 'blocked').length
+    const earned   = log[log.length-1]?.position?.aave?.totalEarned || 0
+    const sel = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+    sel('sum-deployed',  '$' + deployed.toFixed(2))
+    sel('sum-earned',    '$' + (earned).toFixed(6))
+    sel('sum-decisions', log.length)
+    sel('sum-blocks',    blocks)
+  }
+}
+
+// ── Confirmation actions ──────────────────────────────────────────────────────
+async function confirmAction() {
+  const btn = event.target
+  btn.textContent = '⏳ Executing...'
+  btn.disabled = true
+  await postJSON(`${WDK}/confirm`)
+}
+
+async function cancelAction() {
+  await postJSON(`${WDK}/cancel`)
+}
+
+// ── Agent-to-Agent Lending ────────────────────────────────────────────────────
+async function updateA2A() {
+  const data = await fetchJSON(`${WDK}/agents/status`)
+  if (!data) return
+
+  const section = document.getElementById('a2a-section')
+  if (section) section.style.display = 'block'
+
+  const sel = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
+  sel('a2a-pool',   '$' + (data.lender?.lendingPool || 0).toFixed(2))
+  sel('a2a-loaned', '$' + (data.lender?.totalLoaned || 0).toFixed(2))
+  sel('a2a-repaid', '$' + (data.lender?.totalRepaid || 0).toFixed(2))
+  sel('a2a-active', data.lender?.activeLoans || 0)
+  sel('b-balance',  '$' + (data.borrower?.usdtBalance || 0).toFixed(2))
+  sel('b-credit',   (data.borrower?.creditScore || 620) + '/850')
+
+  const jobEl = document.getElementById('b-job')
+  if (jobEl) {
+    if (data.borrower?.activeJob) {
+      const completes = new Date(data.borrower.activeJob.completesAt)
+      const secsLeft  = Math.max(0, Math.round((completes - Date.now()) / 1000))
+      jobEl.textContent = `⚙️ Active: "${data.borrower.activeJob.description}" — auto-repays in ${secsLeft}s`
+      jobEl.style.color = '#fbbf24'
+    } else {
+      jobEl.textContent = 'No active job'
+      jobEl.style.color = '#64748b'
+    }
+  }
+
+  // Loan table
+  const loansEl = document.getElementById('a2a-loans')
+  if (loansEl && data.loans?.length) {
+    const rows = data.loans.slice(-5).reverse().map(l => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e293b;font-size:12px">
+        <span style="color:#94a3b8">${l.id.slice(-8)}</span>
+        <span style="color:#e2e8f0">${l.amount} USDT</span>
+        <span style="color:#94a3b8">${l.jobDescription?.slice(0,30)}...</span>
+        <span style="color:${l.status==='REPAID'?'#4ade80':'#fbbf24'};font-weight:600">${l.status}</span>
+      </div>`).join('')
+    loansEl.innerHTML = rows
+  }
+}
+
+async function a2aFundPool() {
+  const el = document.getElementById('a2a-msg')
+  if (el) el.textContent = '⏳ Funding pool...'
+  const r = await postJSON(`${WDK}/agents/fund-pool`, { amount: 50 })
+  if (!r) { if (el) el.textContent = '✗ Server not responding'; return }
+  if (el) {
+    el.textContent = r.ok
+      ? `✓ Pool funded — $${r.lendingPool?.toFixed(2)} USDT available for agent loans`
+      : `✗ Failed: ${r.error || 'unknown error'}`
+    el.style.color = r.ok ? '#4ade80' : '#f87171'
+  }
+}
+
+async function a2aRequestLoan() {
+  const el = document.getElementById('a2a-msg')
+  if (el) { el.textContent = '⏳ Agent B requesting loan...'; el.style.color = '#64748b' }
+
+  // Use simulate/request which auto-funds pool if needed
+  const r = await postJSON(`${WDK}/agents/simulate/request`, {})
+  if (!r) { if (el) el.textContent = '✗ Server not responding'; return }
+
+  if (el) {
+    if (r.approved) {
+      el.textContent = `✓ Loan APPROVED: $${r.loan?.amount} USDT → Agent B | Job: "${r.loan?.jobDescription?.slice(0,30)}" | Auto-repays in 60s | TX: ${r.loan?.txHash?.slice(0,12)}...`
+      el.style.color = '#4ade80'
+    } else {
+      el.textContent = `✗ Loan REJECTED: ${r.reason}`
+      el.style.color = '#f87171'
+    }
+  }
+}
+
+// ── Main refresh ──────────────────────────────────────────────────────────────
+async function refresh() {
+  await Promise.all([updatePosition(), updatePending(), updateLog(), updateCredit(), updateA2A()])
+  document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString()
+}
+refresh()
+setInterval(refresh, 5000)
+</script>
+</body>
+</html>

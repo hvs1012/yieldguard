@@ -1,0 +1,14 @@
+{
+  "reserve_buffer": 50.0,
+  "min_idle_usdt": 20.0,
+  "expected_apy": 0.045,
+  "min_health_factor": 1.5,
+  "max_health_factor": 3.5,
+  "max_gas_pct": 0.01,
+  "repay_fraction": 0.2,
+  "check_interval_seconds": 15,
+  "max_single_tx_usdt": 500.0,
+  "yield_repay_threshold": 0.05,
+  "allowed_tokens": ["USDT"],
+  "matic_price_usd": 0.5
+}
