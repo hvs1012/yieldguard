@@ -191,9 +191,9 @@ ngrok http 3000
 
 **Scenario 4 — Yield self-service:** Let simulation run → wait for `totalEarned > $0.05` → agent autonomously routes yield to repay debt or compound
 
-**Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s. Note: A2A lending runs on simulation layer. Core supply/repay/withdraw use real WDK calls.
+**Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s.
 ---
-
+Note: A2A lending runs on simulation layer. Core supply/repay/withdraw use real WDK calls.
 ## Tech Stack
 
 - **Wallet:** Tether WDK (`wdk-wallet-evm`, `wdk-protocol-lending-aave-evm`)
