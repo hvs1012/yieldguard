@@ -252,7 +252,7 @@ def run():
                     print(f"\n  🧠 Claude: {claude_analysis[:100]}...")
 
                 # ── Step 7: Build 3-point confirmation card ───────────────────
-                card = engine.build_card(decision, position, fee_matic)
+                card = adj_engine.build_card(decision, position, fee_matic)
                 print_card(card, decision)
 
                 # ── Step 8: Block or wait for dashboard confirmation ──────────

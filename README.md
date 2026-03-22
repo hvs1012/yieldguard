@@ -1,6 +1,6 @@
 # YieldGuard — Autonomous USDT Lending Agent
 
-> An AI agent that monitors Aave V3 positions, deploys idle USDT to maximize yield, protects against liquidation, and uses its own earned yield to autonomously service debt. Built on WDK. Designed to run without human input.
+> An AI agent that monitors Aave V3 positions, deploys idle USDT to maximize yield, protects against liquidation, and uses its own earned yield to autonomously service debt. Built on WDK. Designed for human-supervised autonomous execution - agent monitors and decides independently, human confirms write actions via dashboard for safety.
 
 **Track:** Lending Bot · **Hackathon:** Tether Hackathon Galactica WDK Edition 1
 
@@ -191,8 +191,7 @@ ngrok http 3000
 
 **Scenario 4 — Yield self-service:** Let simulation run → wait for `totalEarned > $0.05` → agent autonomously routes yield to repay debt or compound
 
-**Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s
-
+**Scenario 5 — Agent-to-agent lending:** Fund pool → Agent B requests loan → credit score evaluated → loan approved → auto-repays after 60s. Note: A2A lending runs on simulation layer. Core supply/repay/withdraw use real WDK calls.
 ---
 
 ## Tech Stack
