@@ -1,4 +1,4 @@
-# YieldGuard — Autonomous USDT Lending Agent
+# YieldGuard : Autonomous USDT Lending Agent
 
 > An AI agent that monitors Aave V3 positions, deploys idle USDT to maximize yield, protects against liquidation, and uses its own earned yield to autonomously service debt. Built on WDK. Designed for human-supervised autonomous execution - agent monitors and decides independently, human confirms write actions via dashboard for safety.
 
